@@ -165,6 +165,12 @@ const foodItems = {
   ]
 };
 
+const getDietLabel = (dietType) => {
+  if (dietType === "veg") return "Veg";
+  if (dietType === "nonveg") return "Non-Veg";
+  return "Mixed (Veg + Non-Veg)";
+};
+
 const choosePlanLevel = (activity, pace) => {
   if (activity <= 1.2 || pace <= 0.4) return "beginner";
   if (activity <= 1.55 || pace <= 0.7) return "moderate";
@@ -348,7 +354,12 @@ const downloadColorPdf = () => {
 downloadPdfBtn.addEventListener("click", downloadColorPdf);
 
 const renderFoodSuggestions = (dietType, protein, carbs, fats, calories) => {
-  const items = foodItems[dietType];
+  const items =
+    dietType === "mixed"
+      ? [...foodItems.veg, ...foodItems.nonveg].filter(
+          (item, index, arr) => index === arr.findIndex((candidate) => candidate.name === item.name)
+        )
+      : foodItems[dietType];
   
   // Sort items by protein content (descending) to emphasize protein sources
   const sorted = [...items].sort((a, b) => b.protein - a.protein);
@@ -357,7 +368,7 @@ const renderFoodSuggestions = (dietType, protein, carbs, fats, calories) => {
     (item) => `${item.name} - ${item.protein}g protein, ${item.carbs}g carbs, ${item.fats}g fats`
   );
 
-  foodMeta.textContent = `Pick from these items to build your daily ${calories} kcal target with ${protein}g protein, ${carbs}g carbs, ${fats}g fats.`;
+  foodMeta.textContent = `Pick from these ${getDietLabel(dietType)} items to build your daily ${calories} kcal target with ${protein}g protein, ${carbs}g carbs, ${fats}g fats.`;
   foodPlan.innerHTML = suggestions.map((item) => `<li>${item}</li>`).join("");
 
   return suggestions;
@@ -472,7 +483,7 @@ form.addEventListener("submit", (event) => {
     carbs,
     fats: fat,
     timelineMessage,
-    dietType: dietType === "veg" ? "Veg" : "Non-Veg",
+    dietType: getDietLabel(dietType),
     foodSuggestions,
     workoutLevel: workoutInfo.level,
     workoutMinutes: workoutInfo.minutesText,
@@ -490,7 +501,7 @@ form.addEventListener("submit", (event) => {
     fats: fat,
     timelineMessage,
     projected90,
-    dietType: dietType === "veg" ? "Veg" : "Non-Veg",
+    dietType: getDietLabel(dietType),
     foodSuggestions,
     workoutLevel: workoutInfo.level,
     workoutMinutes: workoutInfo.minutesText,
