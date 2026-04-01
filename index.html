@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChunChu Weight Loss Services</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="noise"></div>
+  <div class="orb orb-left"></div>
+  <div class="orb orb-right"></div>
+
+  <header class="topbar reveal">
+    <div class="brand">ChunChu Weight Loss Services</div>
+    <nav class="top-nav">
+      <a href="#how">Method</a>
+      <a href="#plan">Planner</a>
+    </nav>
+    <a class="top-cta" href="#plan">Get My Plan</a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy reveal">
+        <p class="eyebrow">SUSTAINABLE WEIGHT LOSS</p>
+        <h1>Lose fat, keep your life.</h1>
+        <p class="subtitle">
+          Personalized nutrition + training habits designed for busy schedules,
+          not extreme diets.
+        </p>
+        <div class="chip-row">
+          <span class="chip">No crash diets</span>
+          <span class="chip">Strength-focused</span>
+          <span class="chip">Weekly adjustments</span>
+        </div>
+        <div class="hero-actions">
+          <a href="#plan" class="btn btn-primary">Start Today</a>
+          <a href="#how" class="btn btn-ghost">How It Works</a>
+        </div>
+      </div>
+      <div class="hero-side reveal delay-1">
+        <article class="hero-card">
+          <p class="stat-label">BMI Calculator</p>
+          <p class="stat-sub">Enter your current values for a quick BMI check.</p>
+          <div class="bmi-grid">
+            <label>
+              Weight (kg)
+              <input id="bmiWeight" type="number" min="30" max="250" placeholder="e.g. 78" />
+            </label>
+            <label>
+              Height (cm)
+              <input id="bmiHeight" type="number" min="120" max="230" placeholder="e.g. 170" />
+            </label>
+          </div>
+          <button id="bmiCalcBtn" type="button" class="btn btn-primary">Calculate BMI</button>
+          <p id="bmiResult" class="bmi-result">Your BMI result will appear here.</p>
+          <p id="bmiHint" class="bmi-hint">BMI is a screening metric, not a diagnosis.</p>
+        </article>
+        <article class="checklist-card reveal delay-2">
+          <h3>Today</h3>
+          <ul>
+            <li><span></span> Hit protein target</li>
+            <li><span></span> 8k steps minimum</li>
+            <li><span></span> 25-min strength</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section id="how" class="features">
+      <article class="feature reveal delay-1">
+        <h3>1. Smart Food Plan</h3>
+        <p>No starvation. A flexible meal structure based on your routine and cravings.</p>
+      </article>
+      <article class="feature reveal delay-2">
+        <h3>2. 25-Min Workouts</h3>
+        <p>Strength-first plans to preserve muscle while reducing body fat.</p>
+      </article>
+      <article class="feature reveal delay-3">
+        <h3>3. Progress Coaching</h3>
+        <p>Weekly adjustments from real data so fat loss stays consistent.</p>
+      </article>
+    </section>
+
+    <section id="plan" class="planner reveal">
+      <article class="calculator">
+        <h2>Smart Fat-Loss Planner</h2>
+        <p>Get your calorie target, weekly pace, and a simple macro split.</p>
+        <form id="calorieForm">
+          <label>
+            Current Weight (kg)
+            <input id="weight" type="number" min="30" max="250" required />
+          </label>
+          <label>
+            Target Weight (kg)
+            <input id="targetWeight" type="number" min="30" max="250" required />
+          </label>
+          <label>
+            Activity Level
+            <select id="activity" required>
+              <option value="1.2">Sedentary</option>
+              <option value="1.375">Lightly Active</option>
+              <option value="1.55">Moderately Active</option>
+              <option value="1.725">Very Active</option>
+            </select>
+          </label>
+          <label>
+            Timeline (weeks)
+            <input id="timelineWeeks" type="number" min="4" max="52" value="12" required />
+          </label>
+          <label>
+            Food Preference
+            <select id="dietType" required>
+              <option value="veg">Veg</option>
+              <option value="nonveg">Non-Veg</option>
+            </select>
+          </label>
+          <div class="planner-actions">
+            <button type="submit" class="btn btn-primary">Build My Target</button>
+            <button id="downloadPlanBtn" type="button" class="btn btn-ghost" disabled>Download Plan</button>
+            <button id="downloadPdfBtn" type="button" class="btn btn-ghost" disabled>Download Color PDF</button>
+          </div>
+        </form>
+        <p id="result" class="result"></p>
+        <div id="timelineSummary" class="timeline-summary"></div>
+
+        <div class="workout-plan">
+          <h3>Daily Workout Plan</h3>
+          <p id="planMeta" class="plan-note">Generated from your weight-loss selection and activity level. This is a 7-day example week.</p>
+          <ol id="dailyPlan" class="daily-plan-list">
+            <li>Fill the planner and click Build My Target to generate your daily schedule.</li>
+          </ol>
+        </div>
+      </article>
+
+      <aside class="side-panel reveal delay-1">
+        <h3>Suggested Macro Split (Daily)</h3>
+        <p class="macro-note">These gram values are per day, not per week.</p>
+        <div class="macro-grid">
+          <div class="macro-card">
+            <p>Protein</p>
+            <strong id="proteinOut">- g</strong>
+          </div>
+          <div class="macro-card">
+            <p>Carbs</p>
+            <strong id="carbsOut">- g</strong>
+          </div>
+          <div class="macro-card">
+            <p>Fats</p>
+            <strong id="fatsOut">- g</strong>
+          </div>
+        </div>
+        <div class="timeline">
+          <h4>8-Week Focus</h4>
+          <ol>
+            <li>Week 1-2: Lock in meal rhythm</li>
+            <li>Week 3-5: Add progressive training load</li>
+            <li>Week 6-8: Tighten consistency and sleep</li>
+          </ol>
+        </div>
+
+        <div class="food-section">
+          <h4>Suggested Food Items (Daily)</h4>
+          <p id="foodMeta" class="food-meta">Choose your preference and build your target to get meal suggestions.</p>
+          <ul id="foodPlan" class="food-plan-list">
+            <li>Meal suggestions will appear here after you generate your plan.</li>
+          </ul>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
