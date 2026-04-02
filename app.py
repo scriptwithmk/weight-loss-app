@@ -148,16 +148,60 @@ def map_food_name(user_food: str) -> str | None:
     return None
 
 
+def parse_food_line(line: str) -> tuple[str, float, str] | None:
+    """Parse user text into (food, quantity, unit)."""
+    text = line.strip().lower()
+
+    # Format: food, quantity unit
+    comma_match = re.match(r"^(.+?),\s*([0-9]*\.?[0-9]+)\s*([a-zA-Z]+)?$", text)
+    if comma_match:
+        return (
+            comma_match.group(1).strip(),
+            float(comma_match.group(2)),
+            (comma_match.group(3) or "servings").lower(),
+        )
+
+    # Format: quantity unit of food (e.g., 3 cups of paneer)
+    of_match = re.match(r"^([0-9]*\.?[0-9]+)\s*([a-zA-Z]+)\s+of\s+(.+)$", text)
+    if of_match:
+        return (
+            of_match.group(3).strip(),
+            float(of_match.group(1)),
+            of_match.group(2).lower(),
+        )
+
+    # Format: quantity unit food (e.g., 150 g chicken)
+    qty_unit_food_match = re.match(r"^([0-9]*\.?[0-9]+)\s*([a-zA-Z]+)\s+(.+)$", text)
+    if qty_unit_food_match:
+        return (
+            qty_unit_food_match.group(3).strip(),
+            float(qty_unit_food_match.group(1)),
+            qty_unit_food_match.group(2).lower(),
+        )
+
+    # Format: quantity food (e.g., 2 eggs)
+    qty_food_match = re.match(r"^([0-9]*\.?[0-9]+)\s+(.+)$", text)
+    if qty_food_match:
+        return (
+            qty_food_match.group(2).strip(),
+            float(qty_food_match.group(1)),
+            "pieces",
+        )
+
+    return None
+
+
 def run_manual_calorie_estimator() -> None:
     st.write("No API key mode: type your meal and we will estimate calories.")
     st.caption(
-        "Use one item per line in this format: food, quantity unit. "
-        "Example: egg, 2 pieces | rice, 1 cup | chicken, 150 g"
+        "Use one item per line. Supported formats: "
+        "food, quantity unit | quantity unit of food | quantity food. "
+        "Examples: egg, 2 pieces | 1 cup of rice | 150 g chicken | 2 eggs"
     )
 
     user_input = st.text_area(
         "Enter your meal items",
-        value="egg, 2 pieces\nrice, 1 cup\nchicken, 150 g",
+        value="egg, 2 pieces\n1 cup of rice\n150 g chicken",
         height=140,
     )
 
@@ -175,17 +219,13 @@ def run_manual_calorie_estimator() -> None:
     unknown_rows = []
     total_kcal = 0.0
 
-    pattern = re.compile(r"^(.+?),\s*([0-9]*\.?[0-9]+)\s*([a-zA-Z]+)?$")
-
     for line in lines:
-        match = pattern.match(line)
-        if not match:
+        parsed = parse_food_line(line)
+        if not parsed:
             unknown_rows.append(f"Could not parse: {line}")
             continue
 
-        raw_food = match.group(1).strip()
-        quantity = float(match.group(2))
-        unit = (match.group(3) or "servings").lower()
+        raw_food, quantity, unit = parsed
 
         mapped = map_food_name(raw_food)
         if not mapped:
