@@ -79,9 +79,76 @@ def analyze_food_image(image_bytes: bytes, mime_type: str, api_key: str) -> dict
     return extract_json(response.output_text)
 
 
+FOOD_DB = {
+    "Rice (cooked)": {"kcal_per_100g": 130, "default_grams": 150},
+    "Roti (1 medium)": {"kcal_per_100g": 265, "default_grams": 40},
+    "Dal (cooked)": {"kcal_per_100g": 116, "default_grams": 180},
+    "Paneer": {"kcal_per_100g": 265, "default_grams": 80},
+    "Chicken breast (cooked)": {"kcal_per_100g": 165, "default_grams": 120},
+    "Egg (1 whole)": {"kcal_per_100g": 155, "default_grams": 50},
+    "Fish (cooked)": {"kcal_per_100g": 206, "default_grams": 120},
+    "Oats": {"kcal_per_100g": 389, "default_grams": 40},
+    "Banana": {"kcal_per_100g": 89, "default_grams": 118},
+    "Apple": {"kcal_per_100g": 52, "default_grams": 182},
+    "Curd/Yogurt": {"kcal_per_100g": 61, "default_grams": 150},
+    "Milk": {"kcal_per_100g": 60, "default_grams": 200},
+    "Peanut butter": {"kcal_per_100g": 588, "default_grams": 16},
+    "Almonds": {"kcal_per_100g": 579, "default_grams": 25},
+    "Mixed vegetables (cooked)": {"kcal_per_100g": 65, "default_grams": 150},
+}
+
+
+def run_manual_calorie_estimator() -> None:
+    st.write("No API key mode: select food items and servings to estimate calories.")
+
+    selected_items = st.multiselect(
+        "Select food items",
+        options=sorted(FOOD_DB.keys()),
+    )
+
+    if not selected_items:
+        st.caption("Pick one or more items to calculate total calories.")
+        return
+
+    rows = []
+    total_kcal = 0.0
+
+    for item in selected_items:
+        meta = FOOD_DB[item]
+        grams = meta["default_grams"]
+        kcal_per_100g = meta["kcal_per_100g"]
+        per_serving = round((kcal_per_100g * grams) / 100)
+
+        servings = st.number_input(
+            f"{item} servings ({grams}g each)",
+            min_value=0.0,
+            max_value=10.0,
+            value=1.0,
+            step=0.5,
+            key=f"serving_{item}",
+        )
+
+        item_total = per_serving * servings
+        total_kcal += item_total
+        rows.append(
+            {
+                "item": item,
+                "serving_size": f"{grams}g",
+                "kcal_per_serving": per_serving,
+                "servings": servings,
+                "total_kcal": round(item_total),
+            }
+        )
+
+    st.write("Estimated calories")
+    st.table(rows)
+    st.metric("Estimated Total Calories", f"{round(total_kcal)} kcal")
+    st.caption("This is an approximation based on common nutrition averages.")
+
+
 st.markdown("---")
 st.subheader("SukshmaDharshini")
-st.write("Upload a food image to estimate calories using AI.")
+st.write("Estimate food calories with AI image analysis or use No API key mode.")
 
 api_key = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY", ""))
 uploaded_image = st.file_uploader(
@@ -91,39 +158,45 @@ uploaded_image = st.file_uploader(
 if uploaded_image:
     st.image(uploaded_image, caption="Food photo", use_container_width=True)
 
-if not api_key:
-    st.info(
-        "Add OPENAI_API_KEY in Streamlit Secrets to enable SukshmaDharshini. "
-        "In Streamlit Cloud: App Settings -> Secrets."
+tabs = st.tabs(["AI Image Analysis", "No API Key Mode"])
+
+with tabs[0]:
+    if not api_key:
+        st.info(
+            "OPENAI_API_KEY not found. Switch to 'No API Key Mode' tab below, "
+            "or add OPENAI_API_KEY in Streamlit Secrets."
+        )
+
+    analyze_clicked = st.button(
+        "Analyze Calories",
+        type="primary",
+        disabled=not uploaded_image or not api_key,
     )
 
-analyze_clicked = st.button(
-    "Analyze Calories",
-    type="primary",
-    disabled=not uploaded_image or not api_key,
-)
+    if analyze_clicked and uploaded_image and api_key:
+        with st.spinner("Analyzing food image..."):
+            try:
+                result = analyze_food_image(
+                    uploaded_image.getvalue(),
+                    uploaded_image.type or "image/jpeg",
+                    api_key,
+                )
 
-if analyze_clicked and uploaded_image and api_key:
-    with st.spinner("Analyzing food image..."):
-        try:
-            result = analyze_food_image(
-                uploaded_image.getvalue(),
-                uploaded_image.type or "image/jpeg",
-                api_key,
-            )
+                st.success("Analysis complete")
+                st.write(f"Dish: {result.get('dish_name', 'Unknown')}")
+                st.write(f"Confidence: {result.get('confidence', 'medium').title()}")
+                st.metric("Estimated Total Calories", f"{int(result.get('total_calories', 0))} kcal")
 
-            st.success("Analysis complete")
-            st.write(f"Dish: {result.get('dish_name', 'Unknown')}")
-            st.write(f"Confidence: {result.get('confidence', 'medium').title()}")
-            st.metric("Estimated Total Calories", f"{int(result.get('total_calories', 0))} kcal")
+                items = result.get("items", [])
+                if items:
+                    st.write("Item-wise calorie estimate")
+                    st.table(items)
 
-            items = result.get("items", [])
-            if items:
-                st.write("Item-wise calorie estimate")
-                st.table(items)
+                notes = result.get("notes", "")
+                if notes:
+                    st.caption(f"Notes: {notes}")
+            except Exception as exc:
+                st.error(f"Could not analyze the image. Error: {exc}")
 
-            notes = result.get("notes", "")
-            if notes:
-                st.caption(f"Notes: {notes}")
-        except Exception as exc:
-            st.error(f"Could not analyze the image. Error: {exc}")
+with tabs[1]:
+    run_manual_calorie_estimator()
