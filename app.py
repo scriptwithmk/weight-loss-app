@@ -11,6 +11,44 @@ from openai import OpenAI
 
 st.set_page_config(page_title="ChunChu Weight Loss Services", layout="wide")
 
+st.markdown(
+        """
+        <style>
+            div[data-baseweb="tab-list"] {
+                gap: 0.45rem;
+                background: #fff3df;
+                padding: 0.45rem;
+                border-radius: 14px;
+                border: 1px solid #f0c591;
+                margin-bottom: 0.85rem;
+            }
+            div[data-baseweb="tab-list"] button[role="tab"] {
+                background: #fffaf1;
+                color: #7a3a1d;
+                border: 1px solid #f2d0a6;
+                border-radius: 10px;
+                font-weight: 700;
+                padding: 0.45rem 0.9rem;
+                transition: all 0.2s ease;
+            }
+            div[data-baseweb="tab-list"] button[role="tab"]:hover {
+                background: #ffe6c7;
+                color: #60250f;
+            }
+            div[data-baseweb="tab-list"] button[role="tab"][aria-selected="true"] {
+                background: linear-gradient(135deg, #f25f29, #f08a3c);
+                color: #ffffff;
+                border-color: #e25e2f;
+                box-shadow: 0 6px 18px rgba(242, 95, 41, 0.28);
+            }
+            div[data-baseweb="tab-border"] {
+                display: none;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True,
+)
+
 base_dir = Path(__file__).parent
 html_path = base_dir / "index.html"
 css_path = base_dir / "styles.css"
@@ -375,7 +413,10 @@ def run_manual_calorie_estimator() -> None:
 
 
 
-main_tabs = st.tabs(["Main Planner", "SukshmaDharshini"])
+main_tabs = st.tabs([
+    "🏋️ Main Planner · goals & macros",
+    "🍽️ SukshmaDharshini · calorie analyzer",
+])
 
 with main_tabs[0]:
         components.html(html_for_embed, height=1800, scrolling=True)
@@ -472,7 +513,10 @@ with main_tabs[1]:
         if uploaded_image:
                 st.image(uploaded_image, caption="Uploaded food photo", use_container_width=True)
 
-        tabs = st.tabs(["AI Image Analysis", "No API Key Mode"])
+        tabs = st.tabs([
+            "📸 AI Analysis · from photo",
+            "✍️ No API Key · type meal",
+        ])
 
         with tabs[0]:
                 if not api_key:
