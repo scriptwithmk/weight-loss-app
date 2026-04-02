@@ -1,5 +1,6 @@
 from pathlib import Path
 import base64
+import difflib
 import json
 import os
 import re
@@ -80,18 +81,46 @@ def analyze_food_image(image_bytes: bytes, mime_type: str, api_key: str) -> dict
 FOOD_DB = {
     "Rice (cooked)": {"kcal_per_100g": 130, "default_grams": 150},
     "Roti (1 medium)": {"kcal_per_100g": 265, "default_grams": 40},
+    "Naan": {"kcal_per_100g": 310, "default_grams": 90},
+    "Poha": {"kcal_per_100g": 130, "default_grams": 180},
+    "Upma": {"kcal_per_100g": 150, "default_grams": 180},
+    "Idli": {"kcal_per_100g": 146, "default_grams": 110},
+    "Dosa": {"kcal_per_100g": 168, "default_grams": 120},
+    "Sambar": {"kcal_per_100g": 75, "default_grams": 180},
+    "Rajma (cooked)": {"kcal_per_100g": 127, "default_grams": 180},
+    "Chana (cooked)": {"kcal_per_100g": 164, "default_grams": 180},
     "Dal (cooked)": {"kcal_per_100g": 116, "default_grams": 180},
     "Paneer": {"kcal_per_100g": 265, "default_grams": 80},
+    "Tofu": {"kcal_per_100g": 144, "default_grams": 100},
     "Chicken breast (cooked)": {"kcal_per_100g": 165, "default_grams": 120},
+    "Mutton (cooked)": {"kcal_per_100g": 294, "default_grams": 120},
     "Egg (1 whole)": {"kcal_per_100g": 155, "default_grams": 50},
     "Fish (cooked)": {"kcal_per_100g": 206, "default_grams": 120},
+    "Prawn/Shrimp": {"kcal_per_100g": 99, "default_grams": 120},
     "Oats": {"kcal_per_100g": 389, "default_grams": 40},
+    "Cornflakes": {"kcal_per_100g": 357, "default_grams": 35},
+    "Bread (white)": {"kcal_per_100g": 265, "default_grams": 50},
+    "Bread (brown)": {"kcal_per_100g": 247, "default_grams": 50},
+    "Pasta (cooked)": {"kcal_per_100g": 157, "default_grams": 180},
+    "Noodles (cooked)": {"kcal_per_100g": 138, "default_grams": 180},
     "Banana": {"kcal_per_100g": 89, "default_grams": 118},
     "Apple": {"kcal_per_100g": 52, "default_grams": 182},
+    "Orange": {"kcal_per_100g": 47, "default_grams": 140},
+    "Mango": {"kcal_per_100g": 60, "default_grams": 165},
+    "Grapes": {"kcal_per_100g": 69, "default_grams": 150},
+    "Potato (boiled)": {"kcal_per_100g": 87, "default_grams": 150},
     "Curd/Yogurt": {"kcal_per_100g": 61, "default_grams": 150},
     "Milk": {"kcal_per_100g": 60, "default_grams": 200},
+    "Cheese": {"kcal_per_100g": 402, "default_grams": 30},
+    "Butter": {"kcal_per_100g": 717, "default_grams": 10},
+    "Ghee": {"kcal_per_100g": 900, "default_grams": 10},
+    "Olive oil": {"kcal_per_100g": 884, "default_grams": 10},
     "Peanut butter": {"kcal_per_100g": 588, "default_grams": 16},
     "Almonds": {"kcal_per_100g": 579, "default_grams": 25},
+    "Cashews": {"kcal_per_100g": 553, "default_grams": 25},
+    "Walnuts": {"kcal_per_100g": 654, "default_grams": 25},
+    "Protein powder": {"kcal_per_100g": 400, "default_grams": 30},
+    "Sugar": {"kcal_per_100g": 387, "default_grams": 5},
     "Mixed vegetables (cooked)": {"kcal_per_100g": 65, "default_grams": 150},
 }
 
@@ -99,22 +128,59 @@ FOOD_ALIASES = {
     "rice": "Rice (cooked)",
     "roti": "Roti (1 medium)",
     "chapati": "Roti (1 medium)",
+    "naan": "Naan",
+    "poha": "Poha",
+    "upma": "Upma",
+    "idli": "Idli",
+    "dosa": "Dosa",
+    "sambar": "Sambar",
+    "rajma": "Rajma (cooked)",
+    "kidney beans": "Rajma (cooked)",
+    "chana": "Chana (cooked)",
+    "chickpeas": "Chana (cooked)",
     "dal": "Dal (cooked)",
     "lentil": "Dal (cooked)",
     "paneer": "Paneer",
+    "tofu": "Tofu",
     "chicken": "Chicken breast (cooked)",
+    "mutton": "Mutton (cooked)",
+    "goat": "Mutton (cooked)",
     "egg": "Egg (1 whole)",
     "eggs": "Egg (1 whole)",
     "fish": "Fish (cooked)",
+    "prawn": "Prawn/Shrimp",
+    "shrimp": "Prawn/Shrimp",
     "oats": "Oats",
+    "cornflakes": "Cornflakes",
+    "bread": "Bread (brown)",
+    "white bread": "Bread (white)",
+    "brown bread": "Bread (brown)",
+    "pasta": "Pasta (cooked)",
+    "noodles": "Noodles (cooked)",
     "banana": "Banana",
     "apple": "Apple",
+    "orange": "Orange",
+    "mango": "Mango",
+    "grapes": "Grapes",
+    "potato": "Potato (boiled)",
     "curd": "Curd/Yogurt",
     "yogurt": "Curd/Yogurt",
     "milk": "Milk",
+    "cheese": "Cheese",
+    "butter": "Butter",
+    "ghee": "Ghee",
+    "oil": "Olive oil",
+    "olive oil": "Olive oil",
     "peanut butter": "Peanut butter",
     "almond": "Almonds",
     "almonds": "Almonds",
+    "cashew": "Cashews",
+    "cashews": "Cashews",
+    "walnut": "Walnuts",
+    "walnuts": "Walnuts",
+    "protein powder": "Protein powder",
+    "whey": "Protein powder",
+    "sugar": "Sugar",
     "vegetables": "Mixed vegetables (cooked)",
     "veggies": "Mixed vegetables (cooked)",
 }
@@ -145,7 +211,37 @@ def map_food_name(user_food: str) -> str | None:
         if canonical.lower() in normalized or normalized in canonical.lower():
             return canonical
 
+    # Fuzzy match for typos like "panir", "chappati", "yougurt".
+    candidates = list(FOOD_ALIASES.keys()) + [name.lower() for name in FOOD_DB.keys()]
+    close = difflib.get_close_matches(normalized, candidates, n=1, cutoff=0.78)
+    if close:
+        match_key = close[0]
+        if match_key in FOOD_ALIASES:
+            return FOOD_ALIASES[match_key]
+        for canonical in FOOD_DB:
+            if canonical.lower() == match_key:
+                return canonical
+
     return None
+
+
+def suggest_food_matches(user_food: str) -> list[str]:
+    normalized = user_food.strip().lower()
+    candidates = list(FOOD_ALIASES.keys()) + [name.lower() for name in FOOD_DB.keys()]
+    matches = difflib.get_close_matches(normalized, candidates, n=3, cutoff=0.5)
+    resolved = []
+
+    for match in matches:
+        if match in FOOD_ALIASES:
+            resolved.append(FOOD_ALIASES[match])
+        else:
+            for canonical in FOOD_DB:
+                if canonical.lower() == match:
+                    resolved.append(canonical)
+                    break
+
+    # Preserve order and remove duplicates.
+    return list(dict.fromkeys(resolved))
 
 
 def parse_food_line(line: str) -> tuple[str, float, str] | None:
@@ -205,7 +301,10 @@ def run_manual_calorie_estimator() -> None:
         height=140,
     )
 
-    st.caption("Supported keywords: rice, roti/chapati, dal, paneer, chicken, egg, fish, oats, banana, apple, curd/yogurt, milk, peanut butter, almonds, vegetables.")
+    st.caption(
+        "Wide support enabled: Indian staples, meats, fruits, dairy, nuts, oils, and more. "
+        "If exact food is not found, we auto-correct typos and show suggestions."
+    )
 
     if not st.button("Calculate Manual Calories", type="primary"):
         return
@@ -229,7 +328,13 @@ def run_manual_calorie_estimator() -> None:
 
         mapped = map_food_name(raw_food)
         if not mapped:
-            unknown_rows.append(f"Unknown food: {raw_food}")
+            suggestions = suggest_food_matches(raw_food)
+            if suggestions:
+                unknown_rows.append(
+                    f"Unknown food: {raw_food}. Did you mean: {', '.join(suggestions)}?"
+                )
+            else:
+                unknown_rows.append(f"Unknown food: {raw_food}")
             continue
 
         meta = FOOD_DB[mapped]
