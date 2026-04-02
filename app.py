@@ -95,52 +95,137 @@ FOOD_DB = {
     "Mixed vegetables (cooked)": {"kcal_per_100g": 65, "default_grams": 150},
 }
 
+FOOD_ALIASES = {
+    "rice": "Rice (cooked)",
+    "roti": "Roti (1 medium)",
+    "chapati": "Roti (1 medium)",
+    "dal": "Dal (cooked)",
+    "lentil": "Dal (cooked)",
+    "paneer": "Paneer",
+    "chicken": "Chicken breast (cooked)",
+    "egg": "Egg (1 whole)",
+    "eggs": "Egg (1 whole)",
+    "fish": "Fish (cooked)",
+    "oats": "Oats",
+    "banana": "Banana",
+    "apple": "Apple",
+    "curd": "Curd/Yogurt",
+    "yogurt": "Curd/Yogurt",
+    "milk": "Milk",
+    "peanut butter": "Peanut butter",
+    "almond": "Almonds",
+    "almonds": "Almonds",
+    "vegetables": "Mixed vegetables (cooked)",
+    "veggies": "Mixed vegetables (cooked)",
+}
+
+UNIT_TO_GRAMS = {
+    "g": 1,
+    "gram": 1,
+    "grams": 1,
+    "kg": 1000,
+    "ml": 1,
+    "l": 1000,
+    "cup": 240,
+    "cups": 240,
+}
+
+
+def map_food_name(user_food: str) -> str | None:
+    normalized = user_food.strip().lower()
+
+    if normalized in FOOD_ALIASES:
+        return FOOD_ALIASES[normalized]
+
+    for alias, canonical in FOOD_ALIASES.items():
+        if alias in normalized:
+            return canonical
+
+    for canonical in FOOD_DB:
+        if canonical.lower() in normalized or normalized in canonical.lower():
+            return canonical
+
+    return None
+
 
 def run_manual_calorie_estimator() -> None:
-    st.write("No API key mode: select food items and servings to estimate calories.")
-
-    selected_items = st.multiselect(
-        "Select food items",
-        options=sorted(FOOD_DB.keys()),
+    st.write("No API key mode: type your meal and we will estimate calories.")
+    st.caption(
+        "Use one item per line in this format: food, quantity unit. "
+        "Example: egg, 2 pieces | rice, 1 cup | chicken, 150 g"
     )
 
-    if not selected_items:
-        st.caption("Pick one or more items to calculate total calories.")
+    user_input = st.text_area(
+        "Enter your meal items",
+        value="egg, 2 pieces\nrice, 1 cup\nchicken, 150 g",
+        height=140,
+    )
+
+    st.caption("Supported keywords: rice, roti/chapati, dal, paneer, chicken, egg, fish, oats, banana, apple, curd/yogurt, milk, peanut butter, almonds, vegetables.")
+
+    if not st.button("Calculate Manual Calories", type="primary"):
+        return
+
+    lines = [line.strip() for line in user_input.splitlines() if line.strip()]
+    if not lines:
+        st.warning("Please enter at least one food line.")
         return
 
     rows = []
+    unknown_rows = []
     total_kcal = 0.0
 
-    for item in selected_items:
-        meta = FOOD_DB[item]
-        grams = meta["default_grams"]
+    pattern = re.compile(r"^(.+?),\s*([0-9]*\.?[0-9]+)\s*([a-zA-Z]+)?$")
+
+    for line in lines:
+        match = pattern.match(line)
+        if not match:
+            unknown_rows.append(f"Could not parse: {line}")
+            continue
+
+        raw_food = match.group(1).strip()
+        quantity = float(match.group(2))
+        unit = (match.group(3) or "servings").lower()
+
+        mapped = map_food_name(raw_food)
+        if not mapped:
+            unknown_rows.append(f"Unknown food: {raw_food}")
+            continue
+
+        meta = FOOD_DB[mapped]
         kcal_per_100g = meta["kcal_per_100g"]
-        per_serving = round((kcal_per_100g * grams) / 100)
 
-        servings = st.number_input(
-            f"{item} servings ({grams}g each)",
-            min_value=0.0,
-            max_value=10.0,
-            value=1.0,
-            step=0.5,
-            key=f"serving_{item}",
-        )
+        if unit in UNIT_TO_GRAMS:
+            grams = quantity * UNIT_TO_GRAMS[unit]
+        elif unit in {"piece", "pieces", "serving", "servings", "roti", "rotis"}:
+            grams = quantity * meta["default_grams"]
+        else:
+            unknown_rows.append(f"Unsupported unit '{unit}' for {raw_food}")
+            continue
 
-        item_total = per_serving * servings
-        total_kcal += item_total
+        item_kcal = (grams * kcal_per_100g) / 100
+        total_kcal += item_kcal
+
         rows.append(
             {
-                "item": item,
-                "serving_size": f"{grams}g",
-                "kcal_per_serving": per_serving,
-                "servings": servings,
-                "total_kcal": round(item_total),
+                "input": line,
+                "matched_food": mapped,
+                "grams_used": round(grams),
+                "kcal_per_100g": kcal_per_100g,
+                "estimated_kcal": round(item_kcal),
             }
         )
 
-    st.write("Estimated calories")
-    st.table(rows)
-    st.metric("Estimated Total Calories", f"{round(total_kcal)} kcal")
+    if rows:
+        st.write("Estimated calories")
+        st.table(rows)
+        st.metric("Estimated Total Calories", f"{round(total_kcal)} kcal")
+
+    if unknown_rows:
+        st.warning("Some lines were skipped:")
+        for item in unknown_rows:
+            st.write(f"- {item}")
+
     st.caption("This is an approximation based on common nutrition averages.")
 
 
