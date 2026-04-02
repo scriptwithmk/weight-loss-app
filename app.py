@@ -414,8 +414,8 @@ def run_manual_calorie_estimator() -> None:
 
 
 main_tabs = st.tabs([
-    "🏋️ Main Planner · goals & macros",
-    "🍽️ SukshmaDharshini · calorie analyzer",
+    "![planner](https://img.icons8.com/color/48/dumbbell.png) Main Planner · goals & macros",
+    "![food](https://img.icons8.com/color/48/salad.png) SukshmaDharshini · calorie analyzer",
 ])
 
 with main_tabs[0]:
@@ -514,8 +514,8 @@ with main_tabs[1]:
                 st.image(uploaded_image, caption="Uploaded food photo", use_container_width=True)
 
         tabs = st.tabs([
-            "📸 AI Analysis · from photo",
-            "✍️ No API Key · type meal",
+            "![camera](https://img.icons8.com/color/48/camera--v1.png) AI Analysis · from photo",
+            "![notes](https://img.icons8.com/color/48/edit-property.png) No API Key · type meal",
         ])
 
         with tabs[0]:
